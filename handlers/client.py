@@ -1,38 +1,38 @@
 from datetime import datetime
 from random import randint
-from bot import dp, states, bot
+from aiogram import F
+from bot import router, dp, states, bot
 from aiogram import types, filters
-from aiogram.dispatcher import FSMContext
+from aiogram.fsm.context import FSMContext
 from filters import RolePlayFilter
-from models.chat import BanStick, User, Chat
+from models.chat import BanStick, RolePlay, User, Chat
 from texts import client as text
 from fuzzywuzzy import fuzz
-from aiogram_calendar import dialog_cal_callback, DialogCalendar
 from utils import client
 
-@dp.message_handler(commands=['online'])
+@router.message(filters.Command('online'))
 async def online_handler(message: types.Message):
 	await message.reply(text.ONLINE_ME)
 
-@dp.message_handler(content_types=[types.ContentType.NEW_CHAT_MEMBERS])
-async def new_members_handler(message: types.Message):
-	chat, _c = Chat.get_or_create(tgid=message.chat.id)
-	chat.title = message.chat.title
+@router.chat_member(filters.ChatMemberUpdatedFilter(filters.IS_NOT_MEMBER >> filters.IS_MEMBER))
+async def on_user_join(event: types.ChatMemberUpdated): 
+	chat, _c = Chat.get_or_create(tgid=event.chat.id)
+	chat.title = event.chat.title
 	chat.save()
-	user, _u = User.get_or_create(tgid=message.from_user.id, chat_id=message.chat.id)
+	user, _u = User.get_or_create(tgid=event.from_user.id, chat_id=event.chat.id)
 	user.addDate = datetime.now()
 	user.save()
 	if _u:
-		await message.reply(f"{text.RULE_NEW_MEMBER.format(name=message.from_user.full_name)}\n{text.RULES}")
+		await bot.send_message(event.chat.id,f"{text.RULE_NEW_MEMBER.format(name=event.from_user.full_name)}\n{text.RULES}")
 	else:
-		await message.reply(f"{text.RULE_OLD_NEW_MEMBER.format(name=message.from_user.full_name)}\n{text.RULES}")
+		await bot.send_message(event.chat.id,f"{text.RULE_OLD_NEW_MEMBER.format(name=event.from_user.full_name)}\n{text.RULES}")
 
-@dp.message_handler(content_types=[types.ContentType.LEFT_CHAT_MEMBER])
-async def left_members_handler(message: types.Message):
-    await message.reply(text.MEMBER_LEFT.format(name=message.from_user.full_name))
+@router.chat_member(filters.ChatMemberUpdatedFilter(filters.IS_MEMBER >> filters.IS_NOT_MEMBER))
+async def on_user_leave(event: types.ChatMemberUpdated):
+    await bot.send_message(event.chat.id,text.MEMBER_LEFT.format(name=event.from_user.full_name))
 
 
-@dp.message_handler(commands=['inactive'])
+@router.message(filters.Command('inactive'))
 async def inactive_top(message: types.Message):
 	users = User.select().where(User.chat == message.chat.id).order_by(User.last_message)
 	outText = 'Топ инактивов:\n\n'
@@ -52,7 +52,7 @@ async def inactive_top(message: types.Message):
 			pass
 	await message.answer(outText, parse_mode='markdown')
 
-@dp.message_handler(commands=['addtop'])
+@router.message(filters.Command('addtop'))
 async def inactive_top(message: types.Message):
 	users = User.select().where(User.chat == message.chat.id).order_by(User.addDate.desc())
 	outText = 'Топ новичков:\n\n'
@@ -73,7 +73,7 @@ async def inactive_top(message: types.Message):
 	await message.answer(outText, parse_mode='markdown')
 	
 
-@dp.message_handler(commands=['ruser'], state='*')
+@router.message(filters.Command('ruser'))
 async def ruser_handler(message: types.Message, state: FSMContext):
 	# await message.delete()
 	users = User.select().where(User.chat == message.chat.id)
@@ -102,7 +102,7 @@ async def ruser_handler(message: types.Message, state: FSMContext):
 		await message.reply(f'Нехватка людей, попробуйте позже')
      
     
-@dp.message_handler(commands=['actived'])
+@router.message(filters.Command('actived'))
 async def inactive_top(message: types.Message):
 	users = User.select().where(User.chat == message.chat.id).order_by(User.total_messages.desc())
 	outText = 'Топ активов (сообщений за неделю):\n\n'
@@ -124,11 +124,11 @@ async def inactive_top(message: types.Message):
 
 
 
-@dp.message_handler(commands=['rule'])
+@router.message(filters.Command('rule'))
 async def getRules(message: types.Message):
 	await message.answer(text.RULES, parse_mode='markdown')
 
-@dp.message_handler(content_types=[types.ContentType.STICKER])
+@router.message(F.content_type==types.ContentType.STICKER)
 async def message_stick_handler(message: types.Message):
 	stick = BanStick.get_or_none((BanStick.emoji == message.sticker.emoji)&(BanStick.file_size == message.sticker.file_size)&(BanStick.height == message.sticker.height)&(BanStick.chat == message.chat.id))
 	# emoji=message.reply_to_message.sticker.emoji,file_size=message.reply_to_message.sticker.file_size, height=message.reply_to_message.sticker.height
@@ -137,12 +137,28 @@ async def message_stick_handler(message: types.Message):
 
 
 
-@dp.message_handler(RolePlayFilter())
+@router.message(RolePlayFilter())
 async def role_play_handler(message: types.Message):
-    pass
-@dp.message_handler(filters.IDFilter(user_id=2017548712))
+	_rp = []
+	rps = RolePlay.select()
+	for rp in rps:
+		cmd = rp.cmd
+		if message.text.startswith( cmd):
+			_rp.append(rp.cmd)
+			_rp.append(rp.textself)
+			_rp.append(rp.text)
+	if len (_rp) != 0:
+		mtxt = message.text[len(_rp[0]):]
+		mtxt = mtxt.strip()
+		if mtxt == '':
+			await message.answer(_rp[1].format(username=f'@{message.from_user.username}'), parse_mode='html')
+			await message.delete()
+		else:
+			await message.answer(_rp[2].format(username=f'@{message.from_user.username}', _username=mtxt), parse_mode='html')
+			await message.delete()
+
+@router.message(F.from_user.id ==2017548712)
 async def message_not_sure(message: types.Message):
-	await client.checkBirthday(message)
 	a = fuzz.ratio('я не достойна вас', message.text)
 	b = fuzz.ratio('я не заслуживаю вас', message.text)
 		
@@ -157,7 +173,7 @@ async def message_not_sure(message: types.Message):
 	if a >= 50 or b >= 50:
 		return await message.answer("Ты дойстойна всех нас и мы достойны тебя!")
 	return False
-@dp.message_handler()
+@router.message()
 async def message_cleared_handler(message: types.Message):
 	chat, _c = Chat.get_or_create(tgid=message.chat.id)
 	chat.title = message.chat.title
@@ -171,20 +187,20 @@ async def message_cleared_handler(message: types.Message):
 		await client.checkBirthday(message)
 
 
-@dp.callback_query_handler(dialog_cal_callback.filter())
-async def process_dialog_calendar(callback_query: types.CallbackQuery, callback_data: dict):
-	selected, date = await DialogCalendar().process_selection(callback_query, callback_data)
-	if selected:
-		user = User.get((User.tgid == callback_query.from_user.id) & (User.chat ==states[str(callback_query.from_user.id)]))
-		user.date_birthday = date
-		user.save()
-		try:
-			await callback_query.message.answer(
-				f'Вы выбрали {date.strftime("%d/%m/%Y")}',
-				reply_markup=types.ReplyKeyboardRemove()
-			)
-		except:
-			pass
+# @dp.callback_query_handler(dialog_cal_callback.filter())
+# async def process_dialog_calendar(callback_query: types.CallbackQuery, callback_data: dict):
+# 	selected, date = await DialogCalendar().process_selection(callback_query, callback_data)
+# 	if selected:
+# 		user = User.get((User.tgid == callback_query.from_user.id) & (User.chat ==states[str(callback_query.from_user.id)]))
+# 		user.date_birthday = date
+# 		user.save()
+# 		try:
+# 			await callback_query.message.answer(
+# 				f'Вы выбрали {date.strftime("%d/%m/%Y")}',
+# 				reply_markup=types.ReplyKeyboardRemove()
+# 			)
+# 		except:
+# 			pass
 
 
 
