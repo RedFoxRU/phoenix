@@ -162,33 +162,33 @@ async def ban_stick_handler(message: types.Message, state: FSMContext):
 
 	if message.from_user.id == 848150113:
 		await message.answer('Введите комманду')
-		await RolePlayAdd.cmd.set()
+		await state.set_state(RolePlayAdd.cmd)
+
 
 @router.message(RolePlayAdd.cmd)
 async def ban_stick_handler(message: types.Message, state: FSMContext):
 	if message.chat.type.lower() not in ['private']: return None
-	async with state.proxy() as data:
-		data['cmd'] = message.text
+	await state.update_data(cmd = message.text)
 	await message.answer('Введите общий текст')
-	await RolePlayAdd.text.set()
+	await state.set_state(RolePlayAdd.text)
 
 @router.message( RolePlayAdd.text)
 async def ban_stick_handler(message: types.Message, state: FSMContext):
 	if message.chat.type.lower() not in ['private']: return None
-	async with state.proxy() as data:
-		data['text'] = message.text
+	await state.update_data(text = message.text)
 	await message.answer('Введите одиночный текст')
-	await RolePlayAdd.textself.set()
+	await state.set_state(RolePlayAdd.textself)
 
 
 @router.message( RolePlayAdd.textself)
 async def ban_stick_handler(message: types.Message, state: FSMContext):
 	if message.chat.type.lower() not in ['private']: return None
-	async with state.proxy() as data:
-		rp = RolePlay.create(cmd=data['cmd'], text=data['text'], textself=message.text)
-		rp.save()
+	data = await state.get_data()
+	rp = RolePlay.create(cmd=data['cmd'], text=data['text'], textself=message.text)
+	rp.save()
 	await message.answer('Команда успешно добавлена')
-	await state.finish()
+	await state.clear()
+
 """
 @dp.callback_query_handler(filters.Text(startswith="getDBBACK="), state="*")
 async def getDB(callback: types.callback_query):
