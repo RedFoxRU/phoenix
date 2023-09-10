@@ -1,16 +1,16 @@
 import asyncio
 
 import loguru
-from bot import dp, bot
+from bot import router, bot
 from aiogram import types, filters
 from models.chat import AdWord, BanStick, RolePlay, User, Chat, Week, Warn
 from state import RolePlayAdd
-from aiogram.dispatcher import FSMContext
+from aiogram.fsm.context import FSMContext
 from texts import admin as text
 import schedule
 from datetime import datetime
 
-@dp.message_handler(filters.AdminFilter(),commands=['gprofile'])
+@router.message(filters.Command('gprofile'))
 async def gprofile_handler(message: types.Message):
 	user_id = message.from_user.id
 	chat_id = message.chat.id
@@ -19,7 +19,7 @@ async def gprofile_handler(message: types.Message):
 		users = User.select().where(User.chat == message.chat.id)
 		total_messages = 0
 		acivity_users = 0
-		members = await dp.bot.get_chat_member_count(message.chat.id)
+		members = await bot.get_chat_member_count(message.chat.id)
 		for user in users:
 			if user.total_messages >= 1200:
 				acivity_users += 1
@@ -32,10 +32,11 @@ async def gprofile_handler(message: types.Message):
 			))
 
 
-@dp.message_handler(filters.ChatTypeFilter(types.ChatType.GROUP),filters.AdminFilter(),commands=['db'])
-@dp.message_handler(filters.ChatTypeFilter(types.ChatType.SUPERGROUP),filters.AdminFilter(),commands=['db'])
-@dp.message_handler(filters.ChatTypeFilter(types.ChatType.SUPER_GROUP),filters.AdminFilter(),commands=['db'])
+@router.message(filters.Command('db'))
+@router.message(filters.Command('db'))
+@router.message(filters.Command('db'))
 async def db(message: types.Message):
+	if message.chat.type.lower() not in ['group', 'supergroup']: return None
 	user_id = message.from_user.id
 	chat_id = message.chat.id
 	chat_member = await message.bot.get_chat_member(chat_id, user_id)
@@ -51,9 +52,10 @@ async def db(message: types.Message):
 		await message.bot.send_message(chat_id=message.from_user.id,text='db', reply_markup=inkbs)
 
 
-@dp.message_handler(filters.ChatTypeFilter(types.ChatType.GROUP),filters.AdminFilter(),commands=['warns'])
-@dp.message_handler(filters.ChatTypeFilter(types.ChatType.SUPERGROUP),filters.AdminFilter(),commands=['warns'])
+@router.message(filters.Command('warns'))
+@router.message(filters.Command('warns'))
 async def warns(message: types.Message):
+	if message.chat.type.lower() not in ['group', 'supergroup']: return None
 	user_id = message.from_user.id
 	chat_id = message.chat.id
 	chat_member = await message.bot.get_chat_member(chat_id, user_id)
@@ -71,17 +73,16 @@ async def warns(message: types.Message):
 		await message.answer("Вы не админ")
 
 
-@dp.message_handler(filters.ChatTypeFilter(types.ChatType.GROUP),filters.AdminFilter(),commands=['warn'])
-@dp.message_handler(filters.ChatTypeFilter(types.ChatType.SUPERGROUP),filters.AdminFilter(),commands=['warn'])
+@router.message(filters.Command('warn'))
+@router.message(filters.Command('warn'))
 async def warn(message: types.Message):
+	if message.chat.type.lower() not in ['group', 'supergroup']: return None
 	user_id = message.from_user.id
 	chat_id = message.chat.id
 	chat_member = await message.bot.get_chat_member(chat_id, user_id)
 	if chat_member.can_delete_messages and ' ' in message.text and message.reply_to_message:
 		rule = int(message.text.split(' ')[1])
 		user = User.get((User.tgid == message.reply_to_message.from_user.id) & (User.chat == message.chat.id))
-		# await message.answer(message.reply_to_message.from_user.username)
-		# await message.answer(user.username)
 		if message.reply_to_message.text:
 			warn = Warn.create(user=user, rule=rule,message=message.reply_to_message.text)
 		elif message.reply_to_message.caption:
@@ -96,7 +97,7 @@ async def warn(message: types.Message):
 	else:
 		await message.reply(text.NOT_RULE)
 
-@dp.message_handler(filters.AdminFilter(),commands=['del'])
+@router.message(filters.Command('del'))
 async def delmsgs(message: types.Message):
 	user_id = message.from_user.id
 	chat_id = message.chat.id
@@ -106,12 +107,14 @@ async def delmsgs(message: types.Message):
 		await message.delete()
 
 
-@dp.message_handler(filters.IDFilter(848150113), commands=['send'])
+
+@router.message(filters.Command('send'))
 async def ban_stick_handler(message: types.Message):
-	await dp.bot.send_message(-1001786418282, message.text.replace('/send ', ''))
+	if message.from_user.id != 848150113: return None
+	await bot.send_message(-1001786418282, message.text.replace('/send ', ''))
 
 
-@dp.message_handler(filters.AdminFilter(), commands=['cuser'], state='*')
+@router.message( filters.Command('cuser'))
 async def inactive_top(message: types.Message, state: FSMContext):
 	user_id = message.from_user.id
 	chat_id = message.chat.id
@@ -122,9 +125,9 @@ async def inactive_top(message: types.Message, state: FSMContext):
 		if chat_member.can_delete_messages:
 			user = User.get(User.username == message.text.replace('/cuser ', '').replace('@',''))
 			chat_member = await message.bot.get_chat_member(chat_id, user.tgid)
-			ruser = dp.current_state(user=user.tgid, chat=message.chat.id)
+			ruser = state.current_state(user=user.tgid, chat=message.chat.id)
 			ruser_ = await ruser.get_data('ruser')
-			user_state = dp.current_state(user=ruser_['ruser'][0], chat=message.chat.id)
+			user_state = state.current_state(user=ruser_['ruser'][0], chat=message.chat.id)
 			await ruser.finish()
 			await user_state.finish()
 			_ruser = await message.bot.get_chat_member(chat_id, int(ruser_['ruser'][0]))
@@ -134,7 +137,7 @@ async def inactive_top(message: types.Message, state: FSMContext):
 	else:
 		await message.reply('Укажите юзернейм')
 
-@dp.message_handler(filters.AdminFilter(), commands=['ban_stick'])
+@router.message( filters.Command('ban_stick'))
 async def ban_stick_handler(message: types.Message):
 	user_id = message.from_user.id
 	chat_id = message.chat.id
@@ -153,36 +156,40 @@ async def ban_stick_handler(message: types.Message):
 		else:
 			await message.answer(text.NEED_STICK)
 
-@dp.message_handler(filters.ChatTypeFilter(types.ChatType.PRIVATE),commands=['rp_add'], state='*')
+@router.message(filters.Command('rp_add'))
 async def ban_stick_handler(message: types.Message, state: FSMContext):
+	if message.chat.type.lower() not in ['private']: return None
+
 	if message.from_user.id == 848150113:
 		await message.answer('Введите комманду')
 		await RolePlayAdd.cmd.set()
 
-@dp.message_handler(filters.ChatTypeFilter(types.ChatType.PRIVATE), state=RolePlayAdd.cmd)
+@router.message(RolePlayAdd.cmd)
 async def ban_stick_handler(message: types.Message, state: FSMContext):
+	if message.chat.type.lower() not in ['private']: return None
 	async with state.proxy() as data:
 		data['cmd'] = message.text
 	await message.answer('Введите общий текст')
 	await RolePlayAdd.text.set()
 
-@dp.message_handler(filters.ChatTypeFilter(types.ChatType.PRIVATE), state=RolePlayAdd.text)
+@router.message( RolePlayAdd.text)
 async def ban_stick_handler(message: types.Message, state: FSMContext):
+	if message.chat.type.lower() not in ['private']: return None
 	async with state.proxy() as data:
 		data['text'] = message.text
 	await message.answer('Введите одиночный текст')
 	await RolePlayAdd.textself.set()
 
 
-@dp.message_handler(filters.ChatTypeFilter(types.ChatType.PRIVATE), state=RolePlayAdd.textself)
+@router.message( RolePlayAdd.textself)
 async def ban_stick_handler(message: types.Message, state: FSMContext):
+	if message.chat.type.lower() not in ['private']: return None
 	async with state.proxy() as data:
-		# data['text'] = message.text
 		rp = RolePlay.create(cmd=data['cmd'], text=data['text'], textself=message.text)
 		rp.save()
 	await message.answer('Команда успешно добавлена')
 	await state.finish()
-
+"""
 @dp.callback_query_handler(filters.Text(startswith="getDBBACK="), state="*")
 async def getDB(callback: types.callback_query):
 	offset, chatid = callback.data.replace('getDBBACK=', '').split('=')
@@ -231,3 +238,4 @@ async def getDB(callback: types.callback_query):
 		warns_ += f'Предупреждение по правилу {warn.rule}\n'
 	await callback.message.answer(text.DB_USER.format(username=user.username, total_messages=total_messages, date_of_birdth=user.date_birthday, warns=warns, message_date=user.last_message))
 
+"""

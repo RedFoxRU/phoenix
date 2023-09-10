@@ -1,12 +1,12 @@
+from aiogram import F
 from datetime import datetime
-from bot import dp, states
-from aiogram import types, filters
+from bot import bot, router, states
+from aiogram import Router, types, filters
 from filters import RolePlayFilter
 from models.chat import BanStick, RolePlay, User, Chat
 from texts import roleplay as text
 
 from fuzzywuzzy import fuzz
-from aiogram_calendar import dialog_cal_callback, DialogCalendar
 from utils import client
 import re
 
@@ -39,7 +39,7 @@ def replace_(text, old_word):
     return text
 
 
-@dp.message_handler(commands=['rp'])
+@router.message(filters.Command('rp'))
 async def getRules(message: types.Message):
     cmds = []
     rps = RolePlay.select()
@@ -48,11 +48,9 @@ async def getRules(message: types.Message):
     cmds_ = "\n".join(cmds)
     await message.answer(f'{text.RP}{cmds_}', parse_mode='html')
 
-@dp.message_handler(lambda message: message.text.lower().startswith('*ущипнуть'))
+@router.message(F.text.startswith('*ущипнуть'))
 async def role_play_handler(message: types.Message):
-    # mtxt = message.text.replace("*ущипнуть", '').replace("*УЩИПНУТЬ", '').replace("*ущипнуть ", '').replace("*УЩИПНУТЬ ", '')
     mtxt= replace_(message.text, '*ущипнуть')
-    # mtxt = remove_w(message.text, '*ущипнуть')
     if mtxt == '':
         await message.answer(text.PINCH_SELF.format(username=message.from_user.username))
         await message.delete()
@@ -60,11 +58,9 @@ async def role_play_handler(message: types.Message):
         await message.answer(text.PINCH.format(username=message.from_user.username, _username=mtxt))
         await message.delete()
 
-@dp.message_handler(lambda message: message.text.lower().startswith('*ударить'))
+@router.message(F.text.startswith('*ударить'))
 async def role_play_handler(message: types.Message):
-    #mtxt = message.text.replace("*ударить", '').replace("*УДАРИТЬ", '').replace("*ударить ", '').replace("*УДАРИТЬ ", '')
     mtxt= replace_(message.text, '*ударить')
-    # mtxt = remove_w(message.text, '*ущипнуть')
     if mtxt == '':
         await message.answer(text.HIT_SELF.format(username=message.from_user.username))
         await message.delete()
@@ -72,9 +68,8 @@ async def role_play_handler(message: types.Message):
         await message.answer(text.HIT.format(username=message.from_user.username, _username=mtxt))
         await message.delete()
 
-@dp.message_handler(lambda message: message.text.lower().startswith('*выебать'))
+@router.message(F.text.startswith('*выебать'))
 async def role_play_handler(message: types.Message):
-   # mtxt = message.text.replace("*выебать", '').replace("*ВЫЕБАТЬ", '').replace("*выебать ", '').replace("*ВЫЕБАТЬ ", '')
     mtxt= replace_(message.text, '*выебать')
     if mtxt == '':
         await message.answer(text.FUCK_SELF.format(username=message.from_user.username))
@@ -83,9 +78,8 @@ async def role_play_handler(message: types.Message):
         await message.answer(text.FUCK.format(username=message.from_user.username, _username=mtxt))
         await message.delete()
 
-@dp.message_handler(lambda message: message.text.lower().startswith('*дать пять'))
+@router.message(F.text.startswith('*дать пять'))
 async def role_play_handler(message: types.Message):
-    #mtxt = message.text.replace("*дать пять", '').replace("*дать пять ", '').replace("*ДАТЬ ПЯТЬ", '').replace("*ДАТЬ ПЯТЬ ", '')
     mtxt= replace_(message.text, '*дать пять')
     if mtxt == '':
         await message.answer(text.FIVE_SELF.format(username=message.from_user.username))
@@ -94,9 +88,8 @@ async def role_play_handler(message: types.Message):
         await message.answer(text.FIVE.format(username=message.from_user.username, _username=mtxt))
         await message.delete()
 
-@dp.message_handler(lambda message: message.text.lower().startswith('*испугать'))
+@router.message(F.text.startswith('*испугать'))
 async def role_play_handler(message: types.Message):
-    #mtxt = message.text.replace("*испугать", '').replace("*ИСПУГАТЬ", '')
     mtxt= replace_(message.text, '*испугать')
     if mtxt == '':
         await message.answer(text.SCARE_SELF.format(username=message.from_user.username))
@@ -105,9 +98,8 @@ async def role_play_handler(message: types.Message):
         await message.answer(text.SCARE.format(username=message.from_user.username, _username=mtxt))
         await message.delete()
 
-@dp.message_handler(lambda message: message.text.lower().startswith('*записать на ноготочки'))
+@router.message(F.text.startswith('*записать на ноготочки'))
 async def role_play_handler(message: types.Message):
-    #mtxt = message.text.replace("*записать на ноготочки", '').replace("*записать на ноготочки ", '').replace("*ЗАПИСАТЬ НА НОГОТОЧКИ", '').replace('*ЗАПИСАТЬ НА НОГОТОЧКИ ', '')
     mtxt= replace_(message.text, '*записать на ноготочки')
     if mtxt == '':
         await message.answer(text.WRITE_SELF.format(username=message.from_user.username))
@@ -116,9 +108,8 @@ async def role_play_handler(message: types.Message):
         await message.answer(text.WRITE.format(username=message.from_user.username, _username=mtxt))
         await message.delete()
 
-@dp.message_handler(lambda message: message.text.lower().startswith('*обнять'))
+@router.message(F.text.startswith('*обнять'))
 async def role_play_handler(message: types.Message):
-    #mtxt = message.text.replace("*обнять", '').replace("*ОБНЯТЬ", '').replace('*обнять ', '').replace('*ОБНЯТЬ ', '')
     mtxt= replace_(message.text, '*обнять')
     if mtxt == '':
         await message.answer(text.HUG_SELF.format(username=message.from_user.username))
@@ -127,9 +118,8 @@ async def role_play_handler(message: types.Message):
         await message.answer(text.HUG.format(username=message.from_user.username, _username=mtxt))
         await message.delete()
 
-@dp.message_handler(lambda message: message.text.lower().startswith('*пригласить на чаек'))
+@router.message(F.text.startswith('*пригласить на чаек'))
 async def role_play_handler(message: types.Message):
-    # mtxt = message.text.replace("*пригласить на чаек", '').replace("*ПРИГЛАСИТЬ НА ЧАЕК", '').replace('*ПРИГЛАСИТЬ НА ЧАЕК ', '').replace('*пригласить на чаек ', '')
     mtxt= replace_(message.text, '*пригласить на чаек')
     if mtxt == '':
         await message.answer(text.INVITE_SELF.format(username=message.from_user.username))
@@ -138,9 +128,8 @@ async def role_play_handler(message: types.Message):
         await message.answer(text.INVITE.format(username=message.from_user.username, _username=mtxt))
         await message.delete()
 
-@dp.message_handler(lambda message: message.text.lower().startswith('*извиниться'))
+@router.message(F.text.startswith('*извиниться'))
 async def role_play_handler(message: types.Message):
-    # mtxt = message.text.replace("*Извиниться", '').replace("*ИЗВИНИТЬСЯ", '').replace('*извиниться ', '').replace('*ИЗВИНИТЬСЯ ', '')
     mtxt= replace_(message.text, '*извиниться')
     if mtxt == '':
         await message.answer(text.SORRY_SELF.format(username=message.from_user.username))
@@ -149,9 +138,8 @@ async def role_play_handler(message: types.Message):
         await message.answer(text.SORRY.format(username=message.from_user.username, _username=mtxt))
         await message.delete()
 
-@dp.message_handler(lambda message: message.text.lower().startswith('*кусь'))
+@router.message(F.text.startswith('*кусь'))
 async def role_play_handler(message: types.Message):
-    # mtxt = message.text.replace("*кусь", '').replace("*КУСЬ", '').replace('*кусь ', '').replace('*КУСЬ ', '')
     mtxt= replace_(message.text, '*кусь')
     if mtxt == '':
         await message.answer(text.BITE_SELF.format(username=message.from_user.username))
@@ -160,7 +148,7 @@ async def role_play_handler(message: types.Message):
         await message.answer(text.BITE.format(username=message.from_user.username, _username=mtxt))
         await message.delete()
 
-@dp.message_handler(lambda message: message.text.lower().startswith('*кастрировать'))
+@router.message(F.text.startswith('*кастрировать'))
 async def role_play_handler(message: types.Message):
     mtxt= replace_(message.text, '*кастрировать')
     if mtxt == '':
@@ -170,7 +158,7 @@ async def role_play_handler(message: types.Message):
         await message.answer(text.CAST.format(username=message.from_user.username, _username=mtxt))
         await message.delete()
 
-@dp.message_handler(lambda message: message.text.lower().startswith('*лизнуть'))
+@router.message(F.text.startswith('*лизнуть'))
 async def role_play_handler(message: types.Message):
     mtxt= replace_(message.text, '*Лизнуть')
     if mtxt == '':
@@ -180,7 +168,7 @@ async def role_play_handler(message: types.Message):
         await message.answer(text.LICK.format(username=message.from_user.username, _username=mtxt))
         await message.delete()
 
-@dp.message_handler(lambda message: message.text.lower().startswith('*лизь'))
+@router.message(F.text.startswith('*лизь'))
 async def role_play_handler(message: types.Message):
     mtxt= replace_(message.text, '*Лизь')
     if mtxt == '':
@@ -190,7 +178,7 @@ async def role_play_handler(message: types.Message):
         await message.answer(text.LICK.format(username=message.from_user.username, _username=mtxt))
         await message.delete()
 
-@dp.message_handler(lambda message: message.text.lower().startswith('*отравить'))
+@router.message(F.text.startswith('*отравить'))
 async def role_play_handler(message: types.Message):
     mtxt= replace_(message.text, '*Отравить')
     if mtxt == '':
@@ -200,7 +188,7 @@ async def role_play_handler(message: types.Message):
         await message.answer(text.POISON.format(username=message.from_user.username, _username=mtxt))
         await message.delete()
 
-@dp.message_handler(lambda message: message.text.lower().startswith('*поздравить'))
+@router.message(F.text.startswith('*поздравить'))
 async def role_play_handler(message: types.Message):
     mtxt= replace_(message.text, '*Поздравить')
     if mtxt == '':
@@ -210,7 +198,7 @@ async def role_play_handler(message: types.Message):
         await message.answer(text.CONG.format(username=message.from_user.username, _username=mtxt))
         await message.delete()
 
-@dp.message_handler(lambda message: message.text.lower().startswith('*поцеловать'))
+@router.message(F.text.startswith('*поцеловать'))
 async def role_play_handler(message: types.Message):
     mtxt= replace_(message.text, '*Поцеловать')
     if mtxt == '':
@@ -220,7 +208,7 @@ async def role_play_handler(message: types.Message):
         await message.answer(text.KISS.format(username=message.from_user.username, _username=mtxt))
         await message.delete()
 
-@dp.message_handler(lambda message: message.text.lower().startswith('*уложить спать'))
+@router.message(F.text.startswith('*уложить спать'))
 async def role_play_handler(message: types.Message):
     mtxt= replace_(message.text, '*уложить спать')
     if mtxt == '':
@@ -230,7 +218,7 @@ async def role_play_handler(message: types.Message):
         await message.answer(text.SLEEP.format(username=message.from_user.username, _username=mtxt))
         await message.delete()
 
-@dp.message_handler(lambda message: message.text.lower().startswith('*посмотреть дракона'))
+@router.message(F.text.startswith('*посмотреть дракона'))
 async def role_play_handler(message: types.Message):
     mtxt= mtxt = message.text[len('*посмотреть дракона'):]
     mtxt = mtxt.strip()
@@ -241,7 +229,7 @@ async def role_play_handler(message: types.Message):
         await message.answer(text.SEE_DRAGON.format(username=message.from_user.username, _username=mtxt), parse_mode='html')
         await message.delete()
 
-@dp.message_handler(lambda message: message.text.lower().startswith('*пойти гулять'))
+@router.message(F.text.startswith('*пойти гулять'))
 async def role_play_handler(message: types.Message):
     mtxt= mtxt = message.text[len('*пойти гулять'):]
     mtxt = mtxt.strip()
@@ -252,13 +240,14 @@ async def role_play_handler(message: types.Message):
         await message.answer(text.WALK.format(username=message.from_user.username, _username=mtxt), parse_mode='html')
         await message.delete()
 
-@dp.message_handler(lambda message: message.text.lower().startswith('*кататься'))
+@router.message(F.text.startswith('*кататься'))
 async def role_play_handler(message: types.Message):
     mtxt= mtxt = message.text[len('*кататься'):]
     mtxt = mtxt.strip()
     if mtxt == '':
         await message.answer(text.RIDE_SELF.format(username=message.from_user.username), parse_mode='html')
         await message.delete()
+        
     else:
         await message.answer(text.RIDE.format(username=message.from_user.username, _username=mtxt), parse_mode='html')
-        await message.delete()
+        await message.delete( )

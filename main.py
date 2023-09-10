@@ -3,11 +3,10 @@ from datetime import datetime
 import os
 from random import randint
 from texts import client as texts
-from bot import dp, bot, set_commands
+from bot import dp, bot, set_commands, router
 from config import PWD,DBNAME
 import handlers
 from models.chat import User, Week
-from aiogram.utils import executor
 import aioschedule
 from loguru import logger
 import database
@@ -49,11 +48,13 @@ async def on_startup(dp):
 	await set_commands()
 	asyncio.create_task(scheduler())
 
-def main():
-	executor.start_polling(dp, on_startup=on_startup)
+async def main():
+	dp.include_routers(router)
+	await dp.start_polling(bot)
+# (dp, on_startup=on_startup)
 
 
 if __name__ == '__main__':
 	# database.main(PWD+DBNAME)
 
-	main()
+    asyncio.run(main())

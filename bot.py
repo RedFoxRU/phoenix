@@ -1,14 +1,14 @@
-from aiogram import Dispatcher, Bot, types
+from aiogram import Dispatcher, Bot, Router, types
 from config import TOKEN
 from loguru import logger
 logger.add("test.log", level="INFO", format="{time} - {message}")
 
-from aiogram.contrib.fsm_storage.memory import MemoryStorage
+from aiogram.fsm.storage.memory import MemoryStorage
 
 bot = Bot(token=TOKEN)
-dp = Dispatcher(bot, storage=MemoryStorage())
+dp = Dispatcher(storage=MemoryStorage())
 states = {}
-
+router = Router()
 
 async def set_commands():
     await dp.bot.set_my_commands([
