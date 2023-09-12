@@ -162,27 +162,12 @@ async def message_not_sure(message: types.Message):
 	a = fuzz.ratio('я не достойна вас', message.text)
 	b = fuzz.ratio('я не заслуживаю вас', message.text)
 		
-	chat, _c = Chat.get_or_create(tgid=message.chat.id)
-	chat.title = message.chat.title
-	chat.save()
-	user, _u = User.get_or_create(tgid=message.from_user.id, chat_id=message.chat.id)
-	user.username        = message.from_user.username
-	user.last_message    = datetime.now()
-	user.total_messages += 1
-	user.save()
+
 	if a >= 50 or b >= 50:
 		return await message.answer("Ты дойстойна всех нас и мы достойны тебя!")
 	return False
 @router.message()
 async def message_cleared_handler(message: types.Message):
-	chat, _c = Chat.get_or_create(tgid=message.chat.id)
-	chat.title = message.chat.title
-	chat.save()
-	user, _u = User.get_or_create(tgid=message.from_user.id, chat_id=message.chat.id)
-	user.username        = message.from_user.username
-	user.last_message    = datetime.now()
-	user.total_messages += 1
-	user.save()
 	if message.from_user != 1845350180:
 		await client.checkBirthday(message)
 

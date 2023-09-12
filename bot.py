@@ -1,6 +1,7 @@
 from aiogram import Dispatcher, Bot, Router, types
 from config import TOKEN
 from loguru import logger
+from midllwares import CounterMiddleware
 logger.add("test.log", level="INFO", format="{time} - {message}")
 
 from aiogram.fsm.storage.memory import MemoryStorage
@@ -9,6 +10,7 @@ bot = Bot(token=TOKEN)
 dp = Dispatcher(storage=MemoryStorage())
 states = {}
 router = Router()
+router.message.middleware(CounterMiddleware())
 
 async def set_commands():
     await dp.bot.set_my_commands([
