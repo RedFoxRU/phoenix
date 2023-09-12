@@ -113,6 +113,17 @@ async def ban_stick_handler(message: types.Message):
 	if message.from_user.id != 848150113: return None
 	await bot.send_message(-1001786418282, message.text.replace('/send ', ''))
 
+@router.message(filters.Command('clear'))
+async def clear_handler(message: types.Message):
+	if message.from_user.id != 848150113: return None
+	users = User.select() 
+	weekNumber = datetime.now().isocalendar()[1]
+	for user in users:
+		week, _ = Week.get_or_create(weekNumber=int(weekNumber), user=user.id, total_messages=user.total_messages)
+		week.save()
+		user.total_messages = 0
+		user.save()
+
 
 @router.message( filters.Command('cuser'))
 async def inactive_top(message: types.Message, state: FSMContext):
