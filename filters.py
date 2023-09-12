@@ -6,12 +6,10 @@ from models.chat import RolePlay
 from bot import dp
 
 class RolePlayFilter(BaseFilter):
-    # key = "roleplayfilter"
-    def __init__(self): # [2]
+    def __init__(self):
         pass
 
     async def __call__(self, message: types.Message) -> bool:
-        _rp = []
         rps = RolePlay.select()
         for rp in rps:
             cmd = rp.cmd
