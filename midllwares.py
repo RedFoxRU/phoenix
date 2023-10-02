@@ -16,7 +16,7 @@ class CounterMiddleware(BaseMiddleware):
         event: Message,
         data: Dict[str, Any]
     ) -> Any:
-        if event.text[0] != '/':
+        if event.text and event.text[0] != '/':
             chat, _c = Chat.get_or_create(tgid=event.chat.id)
             chat.title = event.chat.title
             chat.save()

@@ -1,7 +1,7 @@
 import asyncio
 
 import loguru
-from bot import router, bot
+from bot import bot
 from aiogram import types, filters
 from models.chat import AdWord, BanStick, RolePlay, User, Chat, Week, Warn
 from state import RolePlayAdd
@@ -9,6 +9,10 @@ from aiogram.fsm.context import FSMContext
 from texts import admin as text
 import schedule
 from datetime import datetime
+from aiogram import Router
+from midllwares import CounterMiddleware
+router = Router()
+router.message.middleware(CounterMiddleware())
 
 @router.message(filters.Command('gprofile'))
 async def gprofile_handler(message: types.Message):

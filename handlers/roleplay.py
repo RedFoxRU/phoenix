@@ -1,6 +1,6 @@
 from aiogram import F
 from datetime import datetime
-from bot import bot, router, states
+from bot import bot, states
 from aiogram import Router, types, filters
 from filters import RolePlayFilter
 from models.chat import BanStick, RolePlay, User, Chat
@@ -9,6 +9,11 @@ from texts import roleplay as text
 from fuzzywuzzy import fuzz
 from utils import client
 import re
+
+from aiogram import Router
+from midllwares import CounterMiddleware
+router = Router()
+router.message.middleware(CounterMiddleware())
 
 def replace_(text, old_word):
     """

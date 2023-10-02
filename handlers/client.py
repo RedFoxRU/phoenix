@@ -1,7 +1,7 @@
 from datetime import datetime
 from random import randint
 from aiogram import F
-from bot import router, dp, states, bot
+from bot import dp, states, bot
 from aiogram import types, filters
 from aiogram.fsm.context import FSMContext
 from filters import RolePlayFilter
@@ -9,6 +9,13 @@ from models.chat import BanStick, RolePlay, User, Chat
 from texts import client as text
 from fuzzywuzzy import fuzz
 from utils import client
+from aiogram.fsm.storage.base import StorageKey
+
+
+from aiogram import Router
+from midllwares import CounterMiddleware
+router = Router()
+router.message.middleware(CounterMiddleware())
 
 @router.message(filters.Command('online'))
 async def online_handler(message: types.Message):
@@ -42,7 +49,7 @@ async def inactive_top(message: types.Message):
 			k = await message.bot.get_chat_member(chat_id=message.chat.id, user_id=user.tgid)
 			if k.status in ['member', 'creator', 'administrator']:
 				if i <= 10:
-					outText += f"{i}) [{k.user.full_name.replace('ㅤ', '')}](t.me/{user.username}) {user.last_message.strftime('%Y-%m-%d %H:%M:%S')}\n"
+					outText += f"{i}) <a href='t.me/{user.username}'>{k.user.full_name.replace('ㅤ', '')}</a> {user.last_message.strftime('%Y-%m-%d %H:%M:%S')}\n"
 					i+=1
 				else:
 					break
@@ -50,7 +57,7 @@ async def inactive_top(message: types.Message):
 				continue
 		except:
 			pass
-	await message.answer(outText, parse_mode='markdown')
+	await message.answer(outText, parse_mode='html')
 
 @router.message(filters.Command('addtop'))
 async def inactive_top(message: types.Message):
@@ -62,7 +69,7 @@ async def inactive_top(message: types.Message):
 			k = await message.bot.get_chat_member(chat_id=message.chat.id, user_id=user.tgid)
 			if k.status in ['creator', 'administrator', 'member', 'restricted']:
 				if i <= 10:
-					outText += f"{i}) [{k.user.full_name.replace('ㅤ', '')}](t.me/{user.username}) *{user.addDate}* добавили\n"
+					outText += f"{i}) <a href='t.me/{user.username}'>{k.user.full_name.replace('ㅤ', '')}</a> <b>{user.addDate}</b> добавили\n"
 					i+=1
 				else:
 					break
@@ -70,7 +77,7 @@ async def inactive_top(message: types.Message):
 				continue
 		except:
 			pass
-	await message.answer(outText, parse_mode='markdown')
+	await message.answer(outText, parse_mode='html')
 	
 
 @router.message(filters.Command('ruser'))
@@ -87,12 +94,20 @@ async def ruser_handler(message: types.Message, state: FSMContext):
 		ruser = users_[randint(0,len(users_)-1)]
 		if ruser[0] == 285635206:
 			continue
-		user_state = dp.current_state(user=ruser[0], chat=message.chat.id)
-		if await state.get_data('ruser'):
-			ruser = await state.get_data('ruser')
+		user_state = FSMContext(
+		# bot=bot, # объект бота
+		storage=dp.storage, # dp - экземпляр диспатчера 
+		key=StorageKey(
+			chat_id=message.chat.id, # если юзер в ЛС, то chat_id=user_id
+			user_id=ruser[0],  
+			bot_id=bot.id))
+		self_data = await state.get_data()
+		ruser_data = await user_state.get_data()
+		if 'ruser' in self_data:
+			ruser = ruser_data['ruser']
 			await message.reply(f'Вы уже должны были поменяться с @{ruser["ruser"][1]}')
 			return
-		if await user_state.get_data('ruser'):
+		if 'ruser' in ruser_data:
 			continue
 		await state.set_data({'ruser':ruser})
 		await user_state.set_data({'ruser':[message.from_user.id, message.from_user.username]})
@@ -100,7 +115,7 @@ async def ruser_handler(message: types.Message, state: FSMContext):
 		return
 	else:
 		await message.reply(f'Нехватка людей, попробуйте позже')
-     
+
     
 @router.message(filters.Command('actived'))
 async def inactive_top(message: types.Message):
@@ -112,7 +127,7 @@ async def inactive_top(message: types.Message):
 			k = await message.bot.get_chat_member(chat_id=message.chat.id, user_id=user.tgid)
 			if k.status in ['creator', 'administrator', 'member', 'restricted']:
 				if i <= 10:
-					outText += f"{i}) [{k.user.full_name.replace('ㅤ', '')}](t.me/{user.username}) *{user.total_messages}* сообщений\n"
+					outText += f"{i}) <a href='t.me/{user.username}'>{k.user.full_name.replace('ㅤ', '')}</a> <b>{user.total_messages}</b> сообщений\n"
 					i+=1
 				else:
 					break
@@ -120,13 +135,13 @@ async def inactive_top(message: types.Message):
 				continue
 		except:
 			pass
-	await message.answer(outText, parse_mode='markdown')
+	await message.answer(outText, parse_mode='html')
 
 
 
 @router.message(filters.Command('rule'))
 async def getRules(message: types.Message):
-	await message.answer(text.RULES, parse_mode='markdown')
+	await message.answer(text.RULES, parse_mode='Markdown')
 
 @router.message(F.content_type==types.ContentType.STICKER)
 async def message_stick_handler(message: types.Message):
