@@ -13,6 +13,9 @@ class RolePlayFilter(BaseFilter):
         rps = RolePlay.select()
         for rp in rps:
             cmd = rp.cmd
-            if message.text.startswith( cmd):
-                return True
+            if not cmd:
+                continue
+            if message.text:
+                if message.text.startswith( cmd):
+                    return True
         return False

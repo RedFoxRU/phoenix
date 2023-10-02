@@ -3,7 +3,7 @@ from datetime import datetime
 import os
 from random import randint
 from texts import client as texts
-from bot import dp, bot, set_commands, router
+from bot import dp, bot, set_commands
 from config import PWD,DBNAME
 import handlers
 from models.chat import User, Week
@@ -49,8 +49,9 @@ async def on_startup(dp):
 	asyncio.create_task(scheduler())
 
 async def main():
-	dp.include_routers(router)
-	await dp.start_polling(bot)
+	dp.include_routers(handlers.admin.router,handlers.roleplay.router,
+                    handlers.client.router)
+	await dp.start_polling(bot, on_startup=on_startup)
 # (dp, on_startup=on_startup)
 
 
