@@ -84,6 +84,20 @@ class BanStick(Model):
     
     class Meta:
         database = db
+class MessagePrivate(Model):
+    id = PrimaryKeyField()
+    message_text = TextField()
+    name = CharField()
+    userid = IntegerField()
+    # chat = ForeignKeyField(Chat, 'tgid')
+    to_user = CharField()
+    # message_id = msg_id,
+    # message_text = text,
+    # name = query.from_user.full_name,
+    # user_id = query.from_user.id,
+    # tg_username = query.from_user.username
+    class Meta:
+        database = db
         
 Chat.create_table()
 RolePlay.create_table()
@@ -93,6 +107,7 @@ Warn.create_table()
 AdWord.create_table()
 Message.create_table()
 BanStick.create_table()
+MessagePrivate.create_table()
 
 
 
