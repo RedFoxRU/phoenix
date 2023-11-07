@@ -10,6 +10,7 @@ from models.chat import User, Week
 import aioschedule
 from loguru import logger
 import database
+from apscheduler.schedulers.asyncio import AsyncIOScheduler
 
 async def clear ():
 	users = User.select() 
@@ -49,13 +50,14 @@ async def on_startup(dp):
 	asyncio.create_task(scheduler())
 
 async def main():
+	scheduler = AsyncIOScheduler()
+
+	scheduler.add_job(clear,'cron',day_of_week='mon',hour=00, minute=00)
+	scheduler.start()
 	dp.include_routers(handlers.admin.router,handlers.roleplay.router,
-                    handlers.client.router)
+                    handlers.client.router, handlers.inline_mode.router)
 	await dp.start_polling(bot, on_startup=on_startup)
-# (dp, on_startup=on_startup)
 
 
 if __name__ == '__main__':
-	# database.main(PWD+DBNAME)
-
     asyncio.run(main())

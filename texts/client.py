@@ -28,6 +28,7 @@ RULE_OLD_NEW_MEMBER= """
 Напомню правила
 """
 MEMBER_LEFT="{name} покинул нас."
+MEMBER_KICK="{name} стреляет в @{kicked}."
 ONLINE_ME = "Я ONLINE"
 
 HAPPY_BEARTHDAY_CHAT = [

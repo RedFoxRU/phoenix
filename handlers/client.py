@@ -5,13 +5,13 @@ from bot import dp, states, bot
 from aiogram import types, filters
 from aiogram.fsm.context import FSMContext
 from filters import RolePlayFilter
-from models.chat import BanStick, RolePlay, User, Chat
+from models.chat import BanStick, RolePlay, User, Chat, MessagePrivate
 from texts import client as text
 from fuzzywuzzy import fuzz
 from utils import client
 from aiogram.fsm.storage.base import StorageKey
 
-
+import uuid
 from aiogram import Router
 from midllwares import CounterMiddleware
 router = Router()
@@ -36,14 +36,33 @@ async def on_user_join(event: types.ChatMemberUpdated):
 
 @router.chat_member(filters.ChatMemberUpdatedFilter(filters.IS_MEMBER >> filters.IS_NOT_MEMBER))
 async def on_user_leave(event: types.ChatMemberUpdated):
-    await bot.send_message(event.chat.id,text.MEMBER_LEFT.format(name=event.from_user.full_name))
+	if event.new_chat_member:
+		await bot.send_message(event.chat.id,text.MEMBER_KICK.format(name=event.from_user.full_name,
+                                                               kicked=event.new_chat_member.user.username))
+		return
+	await bot.send_message(event.chat.id,text.MEMBER_LEFT.format(name=event.from_user.full_name))
 
 
 @router.message(filters.Command('inactive'))
 async def inactive_top(message: types.Message):
 	users = User.select().where(User.chat == message.chat.id).order_by(User.last_message)
+	users_ = User.select().where((User.chat == message.chat.id) & (User.last_message == None))
 	outText = 'Топ инактивов:\n\n'
 	i = 1
+	if users_.count() >= 0:
+		for user in users_:
+			try:
+				k = await message.bot.get_chat_member(chat_id=message.chat.id, user_id=user.tgid)
+				if k.status in ['member', 'creator', 'administrator']:
+					if i <= 10:
+						outText += f"{i}) <a href='t.me/{user.username}'>{k.user.full_name.replace('ㅤ', '')}</a> {user.last_message.strftime('%Y-%m-%d %H:%M:%S')}\n"
+						i+=1
+					else:
+						break
+				else:
+					continue
+			except:
+				pass
 	for user in users:
 		try:
 			k = await message.bot.get_chat_member(chat_id=message.chat.id, user_id=user.tgid)
@@ -187,20 +206,40 @@ async def message_cleared_handler(message: types.Message):
 		await client.checkBirthday(message)
 
 
-# @dp.callback_query_handler(dialog_cal_callback.filter())
-# async def process_dialog_calendar(callback_query: types.CallbackQuery, callback_data: dict):
-# 	selected, date = await DialogCalendar().process_selection(callback_query, callback_data)
-# 	if selected:
-# 		user = User.get((User.tgid == callback_query.from_user.id) & (User.chat ==states[str(callback_query.from_user.id)]))
-# 		user.date_birthday = date
-# 		user.save()
-# 		try:
-# 			await callback_query.message.answer(
-# 				f'Вы выбрали {date.strftime("%d/%m/%Y")}',
-# 				reply_markup=types.ReplyKeyboardRemove()
-# 			)
-# 		except:
-# 			pass
 
+@router.callback_query(F.data.startswith('whisper'))
+async def InlineHandler(call: types.CallbackQuery):
+	msg_id = int(call.data.split(',')[1])
+	message = MessagePrivate.get_by_id(msg_id)
+	if message:
+		matn =  message.message_text
+		owner_id = message.userid
+
+		wanted_users = [message.to_user.lower()]
+		temp = wanted_users
+
+		possible_id = str(call.from_user.id)
+		possible_username = call.from_user.username
+		if possible_username:
+			possible_username = possible_username.lower()
+		if len(temp) >= 3:
+			yolgon_xabar = temp[2]
+		else:
+			yolgon_xabar = "Не для тебя"
+
+        # Asosiy xabar
+		asosiy_matn = matn
+
+		if  possible_id in wanted_users or\
+			possible_username in wanted_users or\
+			call.from_user.id == owner_id:
+
+			if len(asosiy_matn) <= 200:
+				await call.answer(text=asosiy_matn, cache_time=60, show_alert=True)
+			else: 
+				await call.answer(text=temp[0][:200], cache_time=60, show_alert=True)            
+
+		else:
+			await call.answer(text=yolgon_xabar, cache_time=60, show_alert=True)
 
 
